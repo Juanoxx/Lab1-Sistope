@@ -68,6 +68,7 @@ int main(int argc, char *argv[]){
     char *cflag = (char*)malloc(100*sizeof(char));
     char *mflag = (char*)malloc(100*sizeof(char));
     char *nflag = (char*)malloc(100*sizeof(char));
+    char *uflag = (char*)malloc(100*sizeof(char));
     int cantidadImagenes=0;
     int umbralClasificacion[1];
 
@@ -78,20 +79,29 @@ int main(int argc, char *argv[]){
 
     
     int caso, aux=0;
-    while((caso=getopt(argc,argv, "c:f:n:b"))!= -1){
+
+    //c: Cantidad de imágenes
+	//u: Umbral de binarización de la imágen
+	//n: Umbral para clasificación
+	//m: NOMBRE del archivo que contiene la máscara a utilizar
+
+    while((caso=getopt(argc,argv, "c:u:n:m:b"))!= -1){
         switch(caso){
             case 'c':
         
                 strcpy(cflag, optarg); /*Numero Cantidad imagenes*/
         
                 break;    
-            case 'f':
-                strcpy(mflag, optarg); /*Archivo mascara filtro .txt*/
+            case 'u':
+                strcpy(uflag, optarg); /*Archivo mascara filtro .txt*/
                 break;  
             
             case 'n':
                 strcpy(nflag, optarg); /*Numero Umbral clasificacion*/
-                break;   
+                break;
+
+            case 'm':
+            	strcpy(mflag,optarg);   
         
             case 'b': /*Se muestra o no por pantalla*/
                 aux=1;
@@ -102,6 +112,7 @@ int main(int argc, char *argv[]){
             
         }   
     }
+
 	char **datefilter = (char **)malloc(2000*sizeof(char *));
 	char *date = (char *)malloc(2000*sizeof(char));
 	FILE *filefilter = fopen(mflag,"r");
@@ -141,9 +152,9 @@ int main(int argc, char *argv[]){
 	    sprintf(cantidadImg,"%d",image); 
 	    char *nombreFiltroConvolucion= mflag; /*Archivo para la etapa de convolucion*/
 	    char imagenArchivo[] = "imagen_"; /*Archivo de entrada imagenes*/
-	    char extension[] = ".png"; /*Extension de imagen*/
+	    char extension[] = ".jpg"; /*Extension de imagen*/
 	    strcat(imagenArchivo,cantidadImg); /*imagen_1*/
-	    strcat(imagenArchivo,extension); /*imagen_1.png*/
+	    strcat(imagenArchivo,extension); /*imagen_1.jpg*/
 	    
 	    /*Se crean los pipes*/
 	    pipe(pNombre); /*Para pasar el nombreImagen.*/
