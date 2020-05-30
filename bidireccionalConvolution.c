@@ -19,23 +19,43 @@ matrixF *bidirectionalConvolution(matrixF *mf, matrixF *filter){
 			initial = initial - 2;
 			increase = increase + 1;
 		}
+		for (int i = 0; i < countFil(mf); i++){
+			for(int j = 0; j < countColumn(mf); j++)
+			{
+				printf("%f ",getDateMF(mf, i, j));
+			}
+			printf("\n");
+		}
 		for (int cont = 0; cont < increase; cont++){
 			mf = amplifyMF(mf);
 		}
-		for (int fil = 0; fil < countFil(filter) - countFil(filter); fil++){
-			for (int col = 0; col < countColumn(filter) - countColumn(filter); col++){
+		for (int fil = increase; fil < countFil(mf) - increase; fil++){
+			for (int col = increase; col < countColumn(mf) - increase; col++){
 				float sum = 0.0000;
 				for (int y = 0; y < countFil(filter); y++){
 					for (int x = 0; x < countColumn(filter); x++){
-						float result = getDateMF(mf, y, x)*getDateMF(filter, y + fil, x + col);
+						float result = getDateMF(filter, y, x)*getDateMF(mf, y + fil - increase, x + col - increase);
+						//printf("(%f,%f)",getDateMF(filter, y, x),getDateMF(mf, y + fil - increase, x + col - increase));
 						sum = sum + result;
 					}
+					//printf("\n");
 				}
-				mf = setDateMF(mf, fil + (countFil(filter)/2), col + (countColumn(filter)/2), sum);
+				mf = setDateMF(mf, fil /*+ (countFil(filter)/2*/, col /*+ (countColumn(filter)/2)*/, sum);
+				//printf("%f ",getDateMF(mf, fil, col));
+				//printf("%f ",sum);
+				
 			}
+			///printf("\n\n");
 		}
 		for (int cont2 = 0; cont2 < increase; cont2++){
 			mf = decreaseMF(mf);
+		}
+		for (int i = 0; i < countFil(mf); i++){
+			for(int j = 0; j < countColumn(mf); j++)
+			{
+				printf("%f ",getDateMF(mf, i, j));
+			}
+			printf("\n");
 		}
 		return mf;
 	}

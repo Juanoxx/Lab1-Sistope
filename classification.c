@@ -16,7 +16,7 @@
 // Entrada: en nombre del archivo y lamatriz resultante.
 // Salida: void
 GLOBAL(void)
-escribirJPG(char *nombre, matrixF *mf){
+escribirJPG(char *nombre, matrixF *mf, int fil, int col){
 	struct jpeg_compress_struct cinfo;
 	struct jpeg_error_mgr jerr;
 	FILE * outfile;		/* target file */
@@ -30,14 +30,14 @@ escribirJPG(char *nombre, matrixF *mf){
 	}
 	float **matrix = (float**)malloc(cinfo.jpeg_width*sizeof(float*));
 	jpeg_stdio_dest(&cinfo, outfile);
-	cinfo.image_width = 15; 	/* image width and height, in pixels */
-	cinfo.image_height = 15;
+	cinfo.image_width = col; 	/* image width and height, in pixels */
+	cinfo.image_height = fil;
 	cinfo.input_components = 3;		/* # of color components per pixel */
 	cinfo.in_color_space = JCS_RGB; 	/* colorspace of input image */
 	jpeg_set_defaults(&cinfo);
 	jpeg_set_quality(&cinfo, 10, TRUE /* limit to baseline-JPEG values */);
 	jpeg_start_compress(&cinfo, TRUE);
-	row_stride = 15 * 3;	/* JSAMPLEs per row in image_buffer */
+	row_stride = col * 3;	/* JSAMPLEs per row in image_buffer */
 	JSAMPLE *buffer = (JSAMPLE*)malloc(15*15*3*sizeof(JSAMPLE));
 	unsigned char* pixel_row = (unsigned char*)(buffer);
 	for (int i = 0; i < cinfo.jpeg_height; i++){
@@ -123,7 +123,7 @@ void classification(matrixF *mf, int umbral, char *namefile){
 		printf("|   %s   |         no         |\n",namefile);
 	}
 	strcat(namefile,"R.jpg");
-	escribirJPG(namefile, mf);
+	escribirJPG(namefile, mf,countFil(mf),countColumn(mf));
 }
 
 

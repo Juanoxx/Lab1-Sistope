@@ -187,7 +187,6 @@ int main(int argc, char *argv[]){
 					write(pDateMatrix[1], &datematrix, sizeof(datematrix));
 				}
 			}
-			printf("p00\n");
 	      	waitpid(pid,&status,0);
 
 	    }else{/*Es hijo*/
@@ -202,7 +201,6 @@ int main(int argc, char *argv[]){
 	      	dup2(pFilMatrix[0], 8);
 			close(pColMatrix[1]);
 	      	dup2(pColMatrix[0], 9);
-	      	printf("p01\n");
 	      	char *argvHijo[] = {"lectura",NULL}; /*Nombre del archivo al cual pasara el hijo*/
 	      	execv(argvHijo[0],argvHijo); /*Reemplaza el codigo del proceso, por el cual apunta argvHijo*/
 	    }

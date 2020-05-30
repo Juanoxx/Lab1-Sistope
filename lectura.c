@@ -14,14 +14,14 @@
 
 
 matrixF *grayScale(int **pixels, int height, int width) {
-  matrixF *mf = createMF(height, width);
-  for(int y = 0; y < height; y++) {
-    for(int x = 0; x < width; x++) {
-	  float prom = pixels[y][x*3]*0.299+pixels[y][x*3 + 1]*0.587+pixels[y][x*3 + 2]*0.114;
-	  mf = setDateMF(mf, y, x, prom);
-    }
-  }
-  return mf;
+	matrixF *mf = createMF(height, width);
+	for(int y = 0; y < height; y++) {
+		for(int x = 0; x < width; x++) {
+			float prom = pixels[y][x*3]*0.299+pixels[y][x*3 + 1]*0.587+pixels[y][x*3 + 2]*0.114;
+			mf = setDateMF(mf, y, x, prom);
+		}
+	}
+	return mf;
 }
 
 struct my_error_mgr {
@@ -82,9 +82,7 @@ leerJPG(char *nombre, matrixF *mf){
 			pixels[i][j*3]=(int)filaPixel[(i*cinfo.image_width*3)+(j*3)+0];
 			pixels[i][j*3 + 1]=(int)filaPixel[(i*cinfo.image_width*3)+(j*3)+1];
 			pixels[i][j*3 + 2]=(int)filaPixel[(i*cinfo.image_width*3)+(j*3)+2];
-			//printf("(%d,%d,%d) ",pixels[i][j*3],pixels[i][j*3 + 1],pixels[i][j*3 + 2]);
 		}
-		//printf("\n\n");
 	}
 	mf = grayScale(pixels, cinfo.image_height, cinfo.image_width);
 	(void) jpeg_finish_decompress(&cinfo);
