@@ -122,7 +122,7 @@ void classification(matrixF *mf, int umbral, char *namefile){
 	if (porcentBlack < umbral){
 		printf("|   %s   |         no         |\n",namefile);
 	}
-	strcat(namefile,"R.png");
+	strcat(namefile,"R.jpg");
 	escribirJPG(namefile, mf);
 }
 

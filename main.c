@@ -117,6 +117,7 @@ int main(int argc, char *argv[]){
 	char *date = (char *)malloc(2000*sizeof(char));
 	FILE *filefilter = fopen(mflag,"r");
 	int error = 0, cont = 0;
+	printf("p0\n");
 	while(error == 0){
 		fseek(filefilter, 0, SEEK_END);
 		if ((filefilter == NULL) || (ftell(filefilter) == 0)){
@@ -137,6 +138,7 @@ int main(int argc, char *argv[]){
 	}
 	rewind(filefilter);
 	fclose(filefilter);
+	printf("p0\n");
 	matrixF *filter = convertFilter(datefilter, cont); 
 	/*Este se pasa por el pipe como filtro de convolucion en forma de matrixF*/
     cantidadImagenes = atoi(cflag);
@@ -156,6 +158,7 @@ int main(int argc, char *argv[]){
 	    strcat(imagenArchivo,cantidadImg); /*imagen_1*/
 	    strcat(imagenArchivo,extension); /*imagen_1.jpg*/
 	    
+	    printf("p0\n");
 	    /*Se crean los pipes*/
 	    pipe(pNombre); /*Para pasar el nombreImagen.*/
 	    pipe(pUmbral); /*Para pasar el umbral para clasificacion.*/
@@ -184,6 +187,7 @@ int main(int argc, char *argv[]){
 					write(pDateMatrix[1], &datematrix, sizeof(datematrix));
 				}
 			}
+			printf("p00\n");
 	      	waitpid(pid,&status,0);
 
 	    }else{/*Es hijo*/
@@ -198,7 +202,7 @@ int main(int argc, char *argv[]){
 	      	dup2(pFilMatrix[0], 8);
 			close(pColMatrix[1]);
 	      	dup2(pColMatrix[0], 9);
-	      	
+	      	printf("p01\n");
 	      	char *argvHijo[] = {"lectura",NULL}; /*Nombre del archivo al cual pasara el hijo*/
 	      	execv(argvHijo[0],argvHijo); /*Reemplaza el codigo del proceso, por el cual apunta argvHijo*/
 	    }
