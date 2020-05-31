@@ -13,17 +13,25 @@
 
 
 
-matrixF *rectification(matrixF *mf){
+matrixF *binarizacion(matrixF *mf, int umbral){
 	for (int y = 0; y < countFil(mf); y++){
 		for (int x = 0; x < countColumn(mf); x++){
-			if (getDateMF(mf,y,x) < 0.0000){
+			if (getDateMF(mf,y,x) <= umbral){
 				mf = setDateMF(mf, y, x, 0.0000);
 			}
-			if (getDateMF(mf,y,x) > 255.0000){
+			else{
 				mf = setDateMF(mf, y, x, 255.0000);
 			}
 		}
 	}
+	for (int i = 0; i < countFil(mf); i++){
+			for(int j = 0; j < countColumn(mf); j++)
+			{
+				printf("%f ",getDateMF(mf, i, j));
+			}
+			printf("\n");
+		}
+		printf("\n");
 	return mf;
 }
 
@@ -38,6 +46,7 @@ int main(int argc, char *argv[]){
   int fil, col;
   float date;
   char imagenArchivo[40]; /*Nombre del archivo imagen_1.png*/
+  int umbralBinarizacion[1];
   int umbralClasificacion[1]; /*numero del umbral*/
 
   pid_t pid;
@@ -47,6 +56,7 @@ int main(int argc, char *argv[]){
   int pFilMatrix[2];
   int pColMatrix[2];
   int pUmbral[2]; /*para pasar el umbral para clasificacion*/
+  int pUmbralB[2];
   int pNombre[2]; /*Para pasar nombre imagen_1.png*/
   //int pFiltroConvolucion[2]; /*para pasar filtro.txt*/
   int pImagen[2]; /*para pasar la imagen de rectificacion*/
@@ -54,6 +64,7 @@ int main(int argc, char *argv[]){
   //pipe(pFiltroConvolucion);
   pipe(pNombre);
   pipe(pUmbral);
+  pipe(pUmbralB);
   pipe(pImagen);
   pipe(pDateMatrix);
   pipe(pFilMatrix);
@@ -66,6 +77,7 @@ int main(int argc, char *argv[]){
   if(pid>0){
     read(3,imagenArchivo,sizeof(imagenArchivo));
     read(4,umbralClasificacion,sizeof(umbralClasificacion));
+	read(15,umbralBinarizacion,sizeof(umbralBinarizacion));
     /*falta aqui read de la imagen desde convolucion*/
     /*read(5, entrada,sizeof(matrixF) );*/
 	read(8, &fil, sizeof(fil));
@@ -77,7 +89,7 @@ int main(int argc, char *argv[]){
 			entrada = setDateMF( entrada, y, x, date);
 		}
 	}
-    salida=rectification(entrada);
+    salida=binarizacion(entrada,umbralBinarizacion[0]);
     
     
     /*Para pasar la imagen resultante de rectification*/
@@ -125,7 +137,7 @@ int main(int argc, char *argv[]){
 	dup2(pColMatrix[0], 9);
 
 
-    char *argvHijo[] = {"pooling",NULL};
+    char *argvHijo[] = {"clasificacion",NULL};
     execv(argvHijo[0],argvHijo);
   }
     return 0;

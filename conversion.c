@@ -12,59 +12,16 @@
 #include <setjmp.h>
 
 
-matrixF *bidirectionalConvolution(matrixF *mf, matrixF *filter){
-	if ((countFil(filter) == countColumn(filter))&&(countFil(filter)%2 == 1)){
-		int increase = 0, initial = countFil(filter);
-		while (initial != 1){
-			initial = initial - 2;
-			increase = increase + 1;
+matrixF *escalaGris(matrixF **mf) {
+	matrixF *newmf = createMF(countFil(mf), countColumn(mf)/3);
+	for(int y = 0; y < countFil(newmf); y++) {
+		for(int x = 0; x < countColumn(newmf); x++) {
+			float prom = getDateMF(mf,y,x*3)*0.299+getDateMF(mf,y,x*3 + 1)*0.587+getDateMF(mf,y,x*3 + 2)*0.114;
+			newmf = setDateMF(newmf, y, x, prom);
 		}
-		for (int i = 0; i < countFil(mf); i++){
-			for(int j = 0; j < countColumn(mf); j++)
-			{
-				printf("%f ",getDateMF(mf, i, j));
-			}
-			printf("\n");
-		}
-		for (int cont = 0; cont < increase; cont++){
-			mf = amplifyMF(mf);
-		}
-		for (int fil = increase; fil < countFil(mf) - increase; fil++){
-			for (int col = increase; col < countColumn(mf) - increase; col++){
-				float sum = 0.0000;
-				for (int y = 0; y < countFil(filter); y++){
-					for (int x = 0; x < countColumn(filter); x++){
-						float result = getDateMF(filter, y, x)*getDateMF(mf, y + fil - increase, x + col - increase);
-						//printf("(%f,%f)",getDateMF(filter, y, x),getDateMF(mf, y + fil - increase, x + col - increase));
-						sum = sum + result;
-					}
-					//printf("\n");
-				}
-				mf = setDateMF(mf, fil /*+ (countFil(filter)/2*/, col /*+ (countColumn(filter)/2)*/, sum);
-				//printf("%f ",getDateMF(mf, fil, col));
-				//printf("%f ",sum);
-				
-			}
-			///printf("\n\n");
-		}
-		for (int cont2 = 0; cont2 < increase; cont2++){
-			mf = decreaseMF(mf);
-		}
-		for (int i = 0; i < countFil(mf); i++){
-			for(int j = 0; j < countColumn(mf); j++)
-			{
-				printf("%f ",getDateMF(mf, i, j));
-			}
-			printf("\n");
-		}
-		return mf;
 	}
-	else{
-		return mf;
-	}
+	return newmf;
 }
-
-
 
 int main(int argc, char *argv[]){
   /*matrixf convolucion;
@@ -78,6 +35,7 @@ int main(int argc, char *argv[]){
   float date, date2;
   char imagenArchivo[40]; /*Nombre del archivo imagen_1.png*/
   //char nombreFiltroConvolucion[40]; /*filtro.txt*/
+  int umbralBinarizacion[1];
   int umbralClasificacion[1]; /*numero del umbral*/
 
   pid_t pid;
@@ -87,14 +45,22 @@ int main(int argc, char *argv[]){
   int pFilMatrix[2];
   int pColMatrix[2];
   int pUmbral[2]; /*para pasar el umbral para clasificacion*/
+  int pUmbralB[2];
   int pNombre[2]; /*Para pasar nombre imagen_1.png*/
   //int pFiltroConvolucion[2]; /*para pasar filtro.txt*/
   int pImagen[2]; /*para pasar la imagen de convolucion*/
+  int pDateFilter[2];
+  int pFilFilter[2];
+  int pColFilter[2];
   /*Se crean los pipes*/
   //pipe(pFiltroConvolucion); No se tiene que pasar, porque aqui se ocupa
   pipe(pNombre);
   pipe(pUmbral);
+  pipe(pUmbralB);
   pipe(pImagen);
+  pipe(pDateFilter);
+  pipe(pFilFilter);
+  pipe(pColFilter);
   pipe(pDateMatrix);
   pipe(pFilMatrix);
   pipe(pColMatrix);
@@ -109,6 +75,7 @@ int main(int argc, char *argv[]){
    /*read(4, entrada, sizeof(entrada));*/
     /*falta aqui read de la imagen desde lectura desde 4*/
     read(5,umbralClasificacion,sizeof(umbralClasificacion));
+	read(15,umbralBinarizacion,sizeof(umbralBinarizacion));
     /*read(6, filter,sizeof(filter));*/
 	read(8, &fil, sizeof(fil));
 	read(9, &col, sizeof(col));
@@ -128,16 +95,29 @@ int main(int argc, char *argv[]){
 			entrada = setDateMF( entrada, y2, x2, date2);
 		}
 	}
-    salida=bidirectionalConvolution(entrada,filter);
-    
-    
+    //salida=bidirectionalConvolution(entrada,filter);
+	salida=escalaGris(entrada);
     /*Para pasar la imagen resultante de convolucion*/
 
     close(pNombre[0]);
     write(pNombre[1],imagenArchivo,(strlen(imagenArchivo)+1));
     close(pUmbral[0]);
     write(pUmbral[1],umbralClasificacion,sizeof(umbralClasificacion));
-
+	close(pUmbralB[0]);
+    write(pUmbralB[1],umbralBinarizacion,sizeof(umbralBinarizacion));
+	close(pDateFilter[0]);
+	close(pFilFilter[0]);
+	close(pColFilter[0]);
+	int filfilter = countFil(filter);
+	int colfilter = countColumn(filter);
+	write(pFilFilter[1], &filfilter, sizeof(filfilter));
+	write(pColFilter[1], &colfilter, sizeof(colfilter));
+	for (int y2 = 0; y2 < countFil(filter); y2++){
+		for (int x2 = 0; x2 < countColumn(filter); x2++){
+			float datefilter = getDateMF(filter, y2, x2);
+			write(pDateFilter[1], &datefilter, sizeof(datefilter));
+		}
+	}	
 	/*close(pImagen[0]);
     write(pImagen[1],salida,sizeof(matrixF));*/
 	close(pDateMatrix[0]);
@@ -161,23 +141,33 @@ int main(int argc, char *argv[]){
     close(pNombre[1]);
     dup2(pNombre[0],3);
 
-    close(pUmbral[1]);
-    dup2(pUmbral[0],4);
+    close(pImagen[1]); /*Imagen resultantes de lectura*/
+		dup2(pImagen[0],4);
 
-    /*Para que el hijo lea desde 5, la iamgen de convolucion*/
-    close(pImagen[1]);
-    dup2(pImagen[0],5);
-	
-	close(pDateMatrix[1]);
-	dup2(pDateMatrix[0], 7);
-	close(pFilMatrix[1]);
-	dup2(pFilMatrix[0], 8);
-	close(pColMatrix[1]);
-	dup2(pColMatrix[0], 9);
+		close(pUmbral[1]);
+		dup2(pUmbral[0],5);
+		
+		close(pUmbralB[1]);
+		dup2(pUmbralB[0],15);
+
+		close(pDateFilter[1]);
+		dup2(pDateFilter[0], 7);
+		close(pFilFilter[1]);
+		dup2(pFilFilter[0], 8);
+		close(pColFilter[1]);
+		dup2(pColFilter[0], 9);
+		
+		close(pDateMatrix[1]);
+		dup2(pDateMatrix[0], 10);
+		close(pFilMatrix[1]);
+		dup2(pFilMatrix[0], 11);
+		close(pColMatrix[1]);
+		dup2(pColMatrix[0], 12);
 
 
 
-    char *argvHijo[] = {"rectification",NULL};
+    //char *argvHijo[] = {"rectification",NULL};
+	char *argvHijo[] = {"filtracion",NULL};
     execv(argvHijo[0],argvHijo);
   }
     return 0;

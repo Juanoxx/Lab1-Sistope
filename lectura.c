@@ -37,7 +37,7 @@ my_error_exit (j_common_ptr cinfo){
 	longjmp(myerr->setjmp_buffer, 1);
 }
 GLOBAL(matrixF*)
-leerJPG(char *nombre, matrixF *mf){
+leerJPG(char *nombre){
 	struct jpeg_decompress_struct cinfo;
 	struct my_error_mgr jerr;
 	FILE * imagen;
@@ -71,59 +71,30 @@ leerJPG(char *nombre, matrixF *mf){
 			}
 		}
 	}
-	int **pixels=(int**)malloc(cinfo.image_height*sizeof(int*));
-	for (int k = 0; k < cinfo.image_height; k++){
-		int *row=(int*)malloc(cinfo.image_width*3*sizeof(int));
-		pixels[k] = row;
-	}
+	matrixF *mf = createMF(cinfo.image_height, cinfo.image_width*3);
 	for (int i = 0; i < cinfo.image_height; i++){
 		for(int j = 0; j < cinfo.image_width; j++)
 		{
-			pixels[i][j*3]=(int)filaPixel[(i*cinfo.image_width*3)+(j*3)+0];
-			pixels[i][j*3 + 1]=(int)filaPixel[(i*cinfo.image_width*3)+(j*3)+1];
-			pixels[i][j*3 + 2]=(int)filaPixel[(i*cinfo.image_width*3)+(j*3)+2];
+			mf = setDateMF(mf,i,j*3,(float)filaPixel[(i*cinfo.image_width*3)+(j*3)+0]);
+			mf = setDateMF(mf,i,j*3 + 1,(float)filaPixel[(i*cinfo.image_width*3)+(j*3)+1]);
+			mf = setDateMF(mf,i,j*3 + 2,(float)filaPixel[(i*cinfo.image_width*3)+(j*3)+2]);
 		}
 	}
-	mf = grayScale(pixels, cinfo.image_height, cinfo.image_width);
 	(void) jpeg_finish_decompress(&cinfo);
 	jpeg_destroy_decompress(&cinfo);
 	fclose(imagen);
 	return mf;
 }
-/*matrixF* leerPNG(char *nombre, matrixF *mf, int width, int height, png_byte color_type,
-  png_byte bit_depth, png_bytep *row_pointers) {
-  FILE *archivo = fopen(nombre, "rb");
-  png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-  png_infop info = png_create_info_struct(png);
-  png_init_io(png, archivo);
-  png_read_info(png, info);
-  width      = png_get_image_width(png, info);
-  height     = png_get_image_height(png, info);
-  color_type = png_get_color_type(png, info);
-  bit_depth  = png_get_bit_depth(png, info);
-  png_read_update_info(png, info);
-  row_pointers = (png_bytep*)malloc(sizeof(png_bytep) * height);
-  for(int y = 0; y < height; y++) {
-    row_pointers[y] = (png_byte*)malloc(png_get_rowbytes(png,info));
-  }
-  png_read_image(png, row_pointers);
-  fclose(archivo);
-  png_destroy_read_struct(&png, &info, NULL);
-  mf = grayScale(row_pointers, height, width);
-  return mf;
-}*/
 
 int main(int argc, char *argv[]){
 	matrixF *filter;
 	matrixF *salida;  
 	int fil, col;
 	float date;
-	/*png_byte color_type;
-	png_byte bit_depth;
-	png_bytep *row_pointers = NULL;*/
 
 	char imagenArchivo[40]; /*Nombre del archivo imagen_1.png*/
 	char nombreFiltroConvolucion[40]; /*filtro.txt*/
+	int umbralBinarizacion[1];
 	int umbralClasificacion[1]; /*numero del umbral*/
 
 	pid_t pid;
@@ -137,11 +108,13 @@ int main(int argc, char *argv[]){
 	int pColFilter[2];
 
 	int pUmbral[2]; /*para pasar el umbral para clasificacion*/
+	int pUmbralB[2];
 	int pNombre[2]; /*Para pasar nombre imagen_1.png*/
 	int pImagen[2]; /*para pasar la imagen de lectura*/
 	/*Se crean los pipes*/
 	pipe(pNombre);
 	pipe(pUmbral);
+	pipe(pUmbralB);
 	pipe(pImagen);
 	pipe(pDateMatrix);
 	pipe(pFilMatrix);
@@ -156,7 +129,8 @@ int main(int argc, char *argv[]){
 	/*Es el padre*/
 	if(pid>0){
 		read(3,imagenArchivo,sizeof(imagenArchivo));
-		read(4,umbralClasificacion,sizeof(umbralClasificacion));
+		read(5,umbralClasificacion,sizeof(umbralClasificacion));
+		read(15,umbralBinarizacion,sizeof(umbralBinarizacion));
 		read(8, &fil, sizeof(fil));
 		read(9, &col, sizeof(col));
 		filter = createMF(fil, col);
@@ -165,16 +139,15 @@ int main(int argc, char *argv[]){
 				read(7, &date, sizeof(date));
 				filter = setDateMF( filter, y, x, date);
 			}
-		}
-		/*read(5, &filter,2000*sizeof(filter));*/
-		
-		salida=leerJPG(imagenArchivo, salida);
-		
+		}		
+		salida=leerJPG(imagenArchivo);	
 		close(pNombre[0]);
 		write(pNombre[1],imagenArchivo,(strlen(imagenArchivo)+1));
 
 		close(pUmbral[0]);
 		write(pUmbral[1],umbralClasificacion,sizeof(umbralClasificacion));
+		close(pUmbralB[0]);
+		write(pUmbralB[1],umbralBinarizacion,sizeof(umbralBinarizacion));
 		
 		close(pDateFilter[0]);
 		close(pFilFilter[0]);
@@ -215,6 +188,9 @@ int main(int argc, char *argv[]){
 
 		close(pUmbral[1]);
 		dup2(pUmbral[0],5);
+		
+		close(pUmbralB[1]);
+		dup2(pUmbralB[0],15);
 
 		close(pDateFilter[1]);
 		dup2(pDateFilter[0], 7);
@@ -230,7 +206,8 @@ int main(int argc, char *argv[]){
 		close(pColMatrix[1]);
 		dup2(pColMatrix[0], 12);
 
-		char *argvHijo[] = {"bidireccionalConvolution",NULL};
+		//char *argvHijo[] = {"bidireccionalConvolution",NULL};
+		char *argvHijo[] = {"conversion",NULL};
 		execv(argvHijo[0],argvHijo);
 	}
     return 0;

@@ -70,9 +70,11 @@ int main(int argc, char *argv[]){
     char *nflag = (char*)malloc(100*sizeof(char));
     char *uflag = (char*)malloc(100*sizeof(char));
     int cantidadImagenes=0;
+	int umbralBinarizacion[1];
     int umbralClasificacion[1];
 
     int pUmbral[2];
+	int pUmbralB[2];
     int pNombre[2];
     int status;
     pid_t pid;
@@ -93,15 +95,15 @@ int main(int argc, char *argv[]){
         
                 break;    
             case 'u':
-                strcpy(uflag, optarg); /*Archivo mascara filtro .txt*/
+                strcpy(uflag, optarg); /*Umbral de binarizacion*/
                 break;  
             
             case 'n':
-                strcpy(nflag, optarg); /*Numero Umbral clasificacion*/
+                strcpy(nflag, optarg); /*Umbral de de clasificacion*/
                 break;
 
             case 'm':
-            	strcpy(mflag,optarg);   
+            	strcpy(mflag,optarg);  /*Archivo del filtro laplaciano*/
         
             case 'b': /*Se muestra o no por pantalla*/
                 aux=1;
@@ -138,10 +140,10 @@ int main(int argc, char *argv[]){
 	}
 	rewind(filefilter);
 	fclose(filefilter);
-	printf("p0\n");
 	matrixF *filter = convertFilter(datefilter, cont); 
 	/*Este se pasa por el pipe como filtro de convolucion en forma de matrixF*/
     cantidadImagenes = atoi(cflag);
+	umbralBinarizacion[0] = atoi(uflag);
   	umbralClasificacion[0] = atoi(nflag);
 
 	int image = 1;
@@ -158,10 +160,10 @@ int main(int argc, char *argv[]){
 	    strcat(imagenArchivo,cantidadImg); /*imagen_1*/
 	    strcat(imagenArchivo,extension); /*imagen_1.jpg*/
 	    
-	    printf("p0\n");
 	    /*Se crean los pipes*/
 	    pipe(pNombre); /*Para pasar el nombreImagen.*/
 	    pipe(pUmbral); /*Para pasar el umbral para clasificacion.*/
+		 pipe(pUmbralB);
 	    pipe(pDateMatrix);
 		pipe(pFilMatrix);
 		pipe(pColMatrix);
@@ -174,6 +176,8 @@ int main(int argc, char *argv[]){
 	      	write(pNombre[1],imagenArchivo,(strlen(imagenArchivo)+1));
 	      	close(pUmbral[0]); /*Se cierra la lectura*/
 	      	write(pUmbral[1],umbralClasificacion,sizeof(umbralClasificacion));
+			close(pUmbralB[0]); /*Se cierra la lectura*/
+	      	write(pUmbralB[1],umbralBinarizacion,sizeof(umbralBinarizacion));
 			close(pDateMatrix[0]);
 			close(pFilMatrix[0]);
 			close(pColMatrix[0]);
@@ -193,7 +197,9 @@ int main(int argc, char *argv[]){
 	      	close(pNombre[1]); /*Se cierra la escritura*/
 	      	dup2(pNombre[0],3);
 	      	close(pUmbral[1]); /*Se cierra la escritura*/
-	      	dup2(pUmbral[0],4);
+	      	dup2(pUmbral[0],5);
+			close(pUmbralB[1]); /*Se cierra la escritura*/
+	      	dup2(pUmbralB[0],15);
 			
 			close(pDateMatrix[1]);
 	      	dup2(pDateMatrix[0], 7);
