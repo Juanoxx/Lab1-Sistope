@@ -73,11 +73,11 @@ int main(int argc, char *argv[]){
 	int umbralBinarizacion[1];
     int umbralClasificacion[1];
 
-    int pUmbral[2];
+    /*int pUmbral[2];
 	int pUmbralB[2];
-    int pNombre[2];
-    int status;
-    pid_t pid;
+    int pNombre[2];*/
+    //int status;
+    //pid_t pid;
 
     
     int caso, aux=0;
@@ -147,11 +147,18 @@ int main(int argc, char *argv[]){
   	umbralClasificacion[0] = atoi(nflag);
 
 	int image = 1;
-	int pDateMatrix[2];
+	/*int pDateMatrix[2];
 	int pFilMatrix[2];
-	int pColMatrix[2];
+	int pColMatrix[2];*/
   	printf("\n|     Imagen     |     Nearly Black     |\n");
   	while(image <= cantidadImagenes){ /*Se ejecuta while miestras sea cantidadImagenes>0*/
+		int status;
+		int pDateMatrix[2];
+		int pFilMatrix[2];
+		int pColMatrix[2];
+		int pUmbral[2];
+		int pUmbralB[2];
+		int pNombre[2];
 	    char cantidadImg[10];
 	    sprintf(cantidadImg,"%d",image); 
 	    char *nombreFiltroConvolucion= mflag; /*Archivo para la etapa de convolucion*/
@@ -168,8 +175,8 @@ int main(int argc, char *argv[]){
 		pipe(pFilMatrix);
 		pipe(pColMatrix);
 	    /*Se crea el proceso hijo*/
-	    pid = fork();
-	    
+	    pid_t pid = fork();
+	    printf("imagen: %d\n",image);
 	    /*Mayor que 0 es el PADRE*/
 	    if(pid>0){
 	    	close(pNombre[0]); /*Se cierra la lectura*/
@@ -191,6 +198,7 @@ int main(int argc, char *argv[]){
 					write(pDateMatrix[1], &datematrix, sizeof(datematrix));
 				}
 			}
+			printf("imagenP: %d\n",image);
 	      	waitpid(pid,&status,0);
 
 	    }else{/*Es hijo*/
@@ -207,6 +215,7 @@ int main(int argc, char *argv[]){
 	      	dup2(pFilMatrix[0], 8);
 			close(pColMatrix[1]);
 	      	dup2(pColMatrix[0], 9);
+			printf("imagenH: %d\n",image);
 	      	char *argvHijo[] = {"lectura",NULL}; /*Nombre del archivo al cual pasara el hijo*/
 	      	execv(argvHijo[0],argvHijo); /*Reemplaza el codigo del proceso, por el cual apunta argvHijo*/
 	    }

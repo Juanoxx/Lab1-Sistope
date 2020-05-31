@@ -12,7 +12,7 @@
 #include <setjmp.h>
 
 
-matrixF *escalaGris(matrixF **mf) {
+matrixF *escalaGris(matrixF *mf) {
 	matrixF *newmf = createMF(countFil(mf), countColumn(mf)/3);
 	for(int y = 0; y < countFil(newmf); y++) {
 		for(int x = 0; x < countColumn(newmf); x++) {
