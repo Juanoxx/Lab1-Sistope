@@ -67,7 +67,6 @@ int main(int argc, char *argv[]){
   
   /*Se crea el proceso hijo.*/
   pid = fork();
-  
   /*Es el padre*/
   if(pid>0){
 
@@ -141,7 +140,7 @@ int main(int argc, char *argv[]){
     close(pNombre[1]);
     dup2(pNombre[0],3);
 
-    close(pImagen[1]); /*Imagen resultantes de lectura*/
+    close(pImagen[1]);
 		dup2(pImagen[0],4);
 
 		close(pUmbral[1]);

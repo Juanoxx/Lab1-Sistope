@@ -90,7 +90,6 @@ int main(int argc, char *argv[]){
 	matrixF *filter;
 	matrixF *salida;  
 	int fil, col;
-	float date;
 
 	char imagenArchivo[40]; /*Nombre del archivo imagen_1.png*/
 	char nombreFiltroConvolucion[40]; /*filtro.txt*/
@@ -125,21 +124,23 @@ int main(int argc, char *argv[]){
 	  
 	/*Se crea el proceso hijo.*/
 	pid = fork();
-	  
 	/*Es el padre*/
 	if(pid>0){
 		read(3,imagenArchivo,sizeof(imagenArchivo));
-		read(5,umbralClasificacion,sizeof(umbralClasificacion));
-		read(15,umbralBinarizacion,sizeof(umbralBinarizacion));
+		read(4,umbralClasificacion,sizeof(umbralClasificacion));
+		read(5,umbralBinarizacion,sizeof(umbralBinarizacion));
 		read(8, &fil, sizeof(fil));
 		read(9, &col, sizeof(col));
 		filter = createMF(fil, col);
+		printf("filt (%d,%d)\n",countFil(filter),countColumn(filter));
 		for (int y = 0; y < countFil(filter); y++){
+			printf("c ");
 			for (int x = 0; x < countColumn(filter); x++){
+				float date;
 				read(7, &date, sizeof(date));
 				filter = setDateMF( filter, y, x, date);
 			}
-		}		
+		}			
 		salida=leerJPG(imagenArchivo);	
 		close(pNombre[0]);
 		write(pNombre[1],imagenArchivo,(strlen(imagenArchivo)+1));
@@ -148,7 +149,6 @@ int main(int argc, char *argv[]){
 		write(pUmbral[1],umbralClasificacion,sizeof(umbralClasificacion));
 		close(pUmbralB[0]);
 		write(pUmbralB[1],umbralBinarizacion,sizeof(umbralBinarizacion));
-		
 		close(pDateFilter[0]);
 		close(pFilFilter[0]);
 		close(pColFilter[0]);
@@ -183,7 +183,7 @@ int main(int argc, char *argv[]){
 		close(pNombre[1]);
 		dup2(pNombre[0],3);
 
-		close(pImagen[1]); /*Imagen resultantes de lectura*/
+		close(pImagen[1]);
 		dup2(pImagen[0],4);
 
 		close(pUmbral[1]);
@@ -205,7 +205,6 @@ int main(int argc, char *argv[]){
 		dup2(pFilMatrix[0], 11);
 		close(pColMatrix[1]);
 		dup2(pColMatrix[0], 12);
-
 		//char *argvHijo[] = {"bidireccionalConvolution",NULL};
 		char *argvHijo[] = {"conversion",NULL};
 		execv(argvHijo[0],argvHijo);

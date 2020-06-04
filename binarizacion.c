@@ -72,7 +72,6 @@ int main(int argc, char *argv[]){
   
   /*Se crea el proceso hijo.*/
   pid = fork();
-  
   /*Es el padre*/
   if(pid>0){
     read(3,imagenArchivo,sizeof(imagenArchivo));
@@ -126,9 +125,6 @@ int main(int argc, char *argv[]){
     close(pUmbral[1]);
     dup2(pUmbral[0],4);
 
-     /*Para que el hijo (pooling) lea desde 5, la iamgen de rectification*/
-    /*close(pImagen[1]);
-    dup2(pImagen[0],5);*/
 	close(pDateMatrix[1]);
 	dup2(pDateMatrix[0], 7);
 	close(pFilMatrix[1]);

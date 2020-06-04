@@ -140,7 +140,7 @@ int main(int argc, char *argv[]){
 	}
 	rewind(filefilter);
 	fclose(filefilter);
-	matrixF *filter = convertFilter(datefilter, cont); 
+	//matrixF *filter = convertFilter(datefilter, cont); 
 	/*Este se pasa por el pipe como filtro de convolucion en forma de matrixF*/
     cantidadImagenes = atoi(cflag);
 	umbralBinarizacion[0] = atoi(uflag);
@@ -152,6 +152,7 @@ int main(int argc, char *argv[]){
 	int pColMatrix[2];*/
   	printf("\n|     Imagen     |     Nearly Black     |\n");
   	while(image <= cantidadImagenes){ /*Se ejecuta while miestras sea cantidadImagenes>0*/
+		matrixF *filter = convertFilter(datefilter, cont); 
 		int status;
 		int pDateMatrix[2];
 		int pFilMatrix[2];
@@ -198,16 +199,15 @@ int main(int argc, char *argv[]){
 					write(pDateMatrix[1], &datematrix, sizeof(datematrix));
 				}
 			}
-			printf("imagenP: %d\n",image);
 	      	waitpid(pid,&status,0);
 
 	    }else{/*Es hijo*/
-	      	close(pNombre[1]); /*Se cierra la escritura*/
+	      	close(pNombre[1]);
 	      	dup2(pNombre[0],3);
-	      	close(pUmbral[1]); /*Se cierra la escritura*/
-	      	dup2(pUmbral[0],5);
-			close(pUmbralB[1]); /*Se cierra la escritura*/
-	      	dup2(pUmbralB[0],15);
+	      	close(pUmbral[1]);
+	      	dup2(pUmbral[0],4);
+			close(pUmbralB[1]);
+	      	dup2(pUmbralB[0],5);
 			
 			close(pDateMatrix[1]);
 	      	dup2(pDateMatrix[0], 7);
@@ -215,7 +215,6 @@ int main(int argc, char *argv[]){
 	      	dup2(pFilMatrix[0], 8);
 			close(pColMatrix[1]);
 	      	dup2(pColMatrix[0], 9);
-			printf("imagenH: %d\n",image);
 	      	char *argvHijo[] = {"lectura",NULL}; /*Nombre del archivo al cual pasara el hijo*/
 	      	execv(argvHijo[0],argvHijo); /*Reemplaza el codigo del proceso, por el cual apunta argvHijo*/
 	    }
