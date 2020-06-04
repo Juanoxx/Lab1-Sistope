@@ -190,7 +190,7 @@ int main(int argc, char *argv[]){
 		dup2(pUmbral[0],5);
 		
 		close(pUmbralB[1]);
-		dup2(pUmbralB[0],15);
+		dup2(pUmbralB[0],13);
 
 		close(pDateFilter[1]);
 		dup2(pDateFilter[0], 7);

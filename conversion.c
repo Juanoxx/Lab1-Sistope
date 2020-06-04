@@ -74,7 +74,7 @@ int main(int argc, char *argv[]){
    /*read(4, entrada, sizeof(entrada));*/
     /*falta aqui read de la imagen desde lectura desde 4*/
     read(5,umbralClasificacion,sizeof(umbralClasificacion));
-	read(15,umbralBinarizacion,sizeof(umbralBinarizacion));
+	read(13,umbralBinarizacion,sizeof(umbralBinarizacion));
     /*read(6, filter,sizeof(filter));*/
 	read(8, &fil, sizeof(fil));
 	read(9, &col, sizeof(col));
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]){
 		dup2(pUmbral[0],5);
 		
 		close(pUmbralB[1]);
-		dup2(pUmbralB[0],15);
+		dup2(pUmbralB[0],13);
 
 		close(pDateFilter[1]);
 		dup2(pDateFilter[0], 7);

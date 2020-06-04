@@ -76,7 +76,7 @@ int main(int argc, char *argv[]){
   if(pid>0){
     read(3,imagenArchivo,sizeof(imagenArchivo));
     read(4,umbralClasificacion,sizeof(umbralClasificacion));
-	read(15,umbralBinarizacion,sizeof(umbralBinarizacion));
+	read(13,umbralBinarizacion,sizeof(umbralBinarizacion));
     /*falta aqui read de la imagen desde convolucion*/
     /*read(5, entrada,sizeof(matrixF) );*/
 	read(8, &fil, sizeof(fil));
