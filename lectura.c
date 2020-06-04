@@ -92,9 +92,9 @@ int main(int argc, char *argv[]){
 	int fil, col;
 
 	char imagenArchivo[40]; /*Nombre del archivo imagen_1.png*/
-	char nombreFiltroConvolucion[40]; /*filtro.txt*/
 	int umbralBinarizacion[1];
 	int umbralClasificacion[1]; /*numero del umbral*/
+	int aux[1];
 
 	pid_t pid;
 	int status;
@@ -110,6 +110,7 @@ int main(int argc, char *argv[]){
 	int pUmbralB[2];
 	int pNombre[2]; /*Para pasar nombre imagen_1.png*/
 	int pImagen[2]; /*para pasar la imagen de lectura*/
+	int resultPantalla[2];
 	/*Se crean los pipes*/
 	pipe(pNombre);
 	pipe(pUmbral);
@@ -121,26 +122,29 @@ int main(int argc, char *argv[]){
 	pipe(pDateFilter);
 	pipe(pFilFilter);
 	pipe(pColFilter);
+	pipe(resultPantalla);
 	  
 	/*Se crea el proceso hijo.*/
 	pid = fork();
 	/*Es el padre*/
 	if(pid>0){
+
 		read(3,imagenArchivo,sizeof(imagenArchivo));
 		read(4,umbralClasificacion,sizeof(umbralClasificacion));
 		read(5,umbralBinarizacion,sizeof(umbralBinarizacion));
+		read(6,aux,sizeof(aux));
 		read(8, &fil, sizeof(fil));
 		read(9, &col, sizeof(col));
 		filter = createMF(fil, col);
-		printf("filt (%d,%d)\n",countFil(filter),countColumn(filter));
+
 		for (int y = 0; y < countFil(filter); y++){
-			printf("c ");
 			for (int x = 0; x < countColumn(filter); x++){
 				float date;
 				read(7, &date, sizeof(date));
 				filter = setDateMF( filter, y, x, date);
 			}
 		}			
+
 		salida=leerJPG(imagenArchivo);	
 		close(pNombre[0]);
 		write(pNombre[1],imagenArchivo,(strlen(imagenArchivo)+1));
@@ -149,6 +153,9 @@ int main(int argc, char *argv[]){
 		write(pUmbral[1],umbralClasificacion,sizeof(umbralClasificacion));
 		close(pUmbralB[0]);
 		write(pUmbralB[1],umbralBinarizacion,sizeof(umbralBinarizacion));
+	    close(resultPantalla[0]);
+	    write(resultPantalla[1],aux,sizeof(aux));
+
 		close(pDateFilter[0]);
 		close(pFilFilter[0]);
 		close(pColFilter[0]);
@@ -191,6 +198,9 @@ int main(int argc, char *argv[]){
 		
 		close(pUmbralB[1]);
 		dup2(pUmbralB[0],13);
+
+		close(resultPantalla[1]);
+		dup2(resultPantalla[0],6);
 
 		close(pDateFilter[1]);
 		dup2(pDateFilter[0], 7);

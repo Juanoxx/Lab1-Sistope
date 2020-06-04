@@ -28,7 +28,7 @@ escribirJPG(char *nombre, matrixF *mf, int fil, int col){
 		fprintf(stderr, "can't open %s\n", nombre);
 		exit(1);
 	}
-	float **matrix = (float**)malloc(cinfo.jpeg_width*sizeof(float*));
+
 	jpeg_stdio_dest(&cinfo, outfile);
 	cinfo.image_width = col; 	/* image width and height, in pixels */
 	cinfo.image_height = fil;
@@ -38,7 +38,7 @@ escribirJPG(char *nombre, matrixF *mf, int fil, int col){
 	jpeg_set_quality(&cinfo, 10, TRUE /* limit to baseline-JPEG values */);
 	jpeg_start_compress(&cinfo, TRUE);
 	row_stride = col * 3;	/* JSAMPLEs per row in image_buffer */
-	JSAMPLE *buffer = (JSAMPLE*)malloc(15*15*3*sizeof(JSAMPLE));
+	JSAMPLE *buffer = (JSAMPLE*)malloc(fil*col*3*sizeof(JSAMPLE));
 	unsigned char* pixel_row = (unsigned char*)(buffer);
 	for (int i = 0; i < cinfo.jpeg_height; i++){
 		for(int j = 0; j < cinfo.jpeg_width; j++)
@@ -63,7 +63,7 @@ escribirJPG(char *nombre, matrixF *mf, int fil, int col){
 // Entrada: Matriz resultante desde etapa de pooling, umbral ingresado por usuario y el nombre d ela imagen.
 // Salida: void
 
-void clasificacion(matrixF *mf, int umbral, char *namefile){
+void clasificacion(matrixF *mf, int umbral, char *namefile, int aux){
 	int maxBlack = 0;
 	for (int y = 0; y < countFil(mf); y++){
 		for (int x = 0; x < countColumn(mf); x++){
@@ -73,11 +73,17 @@ void clasificacion(matrixF *mf, int umbral, char *namefile){
 		}
 	}
 	float porcentBlack = (maxBlack * 100.0000)/(countFil(mf) * countColumn(mf));
-	if (porcentBlack >= umbral){
-		printf("|   %s   |         yes        |\n",namefile);
-	}
-	if (porcentBlack < umbral){
-		printf("|   %s   |         no         |\n",namefile);
+
+	if (aux == 1)
+	{
+		
+		if (porcentBlack >= umbral){
+			printf("|   %s   |         yes        |\n",namefile);
+		}
+		if (porcentBlack < umbral){
+			printf("|   %s   |         no         |\n",namefile);
+		}
+
 	}
 	strcat(namefile,"R.jpg");
 	escribirJPG(namefile, mf,countFil(mf),countColumn(mf));
@@ -88,30 +94,30 @@ int main(int argc, char *argv[]){
   /* matrixf clasfication;
   aqui iria la matriz para guardar el clasification*/ 
   matrixF *entrada;
-  matrixF *salida;
   
   int fil, col;
   float date;
 
   char imagenArchivo[40]; /*Nombre del archivo imagen_1.png*/
   int umbralClasificacion[1]; /*numero del umbral*/
-
-  pid_t pid;
-  int status;
-
+  int aux[1];
 
   int pUmbral[2]; /*para pasar el umbral para clasificacion*/
   int pNombre[2]; /*Para pasar nombre imagen_1.png*/
   //int pFiltroConvolucion[2]; /*para pasar filtro.txt*/
   int pImagen[2]; /*para pasar la imagen de pooling*/
+  int resultPantalla[2];
   /*Se crean los pipes*/
   //pipe(pFiltroConvolucion);
   pipe(pUmbral);
   pipe(pNombre);
   pipe(pImagen);
+  pipe(resultPantalla);
 
   read(3,imagenArchivo,sizeof(imagenArchivo));
   read(4,umbralClasificacion,sizeof(umbralClasificacion));
+
+  read(6,aux,sizeof(aux));
   /*falta aqui read de la imagen desde pooling*/
   /*read(5, entrada,sizeof(matrixF) );*/
   read(8, &fil, sizeof(fil));
@@ -123,8 +129,9 @@ int main(int argc, char *argv[]){
 		entrada = setDateMF( entrada, y, x, date);
 	}
   }
+
   char *imagefile = (char *)malloc(1000*sizeof(char));
   strncpy(imagefile, imagenArchivo, strlen(imagenArchivo) - 4);
-  clasificacion(entrada, umbralClasificacion[0],imagefile);
+  clasificacion(entrada, umbralClasificacion[0],imagefile, aux[0]);
   return 0;
 }

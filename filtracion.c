@@ -12,21 +12,26 @@
 #include <setjmp.h>
 
 
-matrixF *filtracion(matrixF *mf, matrixF *filter){
+matrixF *filtracion(matrixF *mf, matrixF *filter, int aux){
 	if ((countFil(filter) == countColumn(filter))&&(countFil(filter)%2 == 1)){
 		int increase = 0, initial = countFil(filter);
 		while (initial != 1){
 			initial = initial - 2;
 			increase = increase + 1;
 		}
-		for (int i = 0; i < countFil(mf); i++){
+
+		if (aux == 1)
+		{
+			for (int i = 0; i < countFil(mf); i++){
 			for(int j = 0; j < countColumn(mf); j++)
 			{
 				printf("%f ",getDateMF(mf, i, j));
 			}
 			printf("\n");
+			}
+			printf("\n");
 		}
-		printf("\n");
+		
 		matrixF *newmf = createMF(countFil(mf),countColumn(mf));
 		for (int cont = 0; cont < increase; cont++){
 			mf = amplifyMF(mf);
@@ -47,14 +52,18 @@ matrixF *filtracion(matrixF *mf, matrixF *filter){
 		for (int cont2 = 0; cont2 < increase; cont2++){
 			mf = decreaseMF(mf);
 		}
-		for (int i = 0; i < countFil(newmf); i++){
+		if (aux == 1)
+		{
+			for (int i = 0; i < countFil(newmf); i++){
 			for(int j = 0; j < countColumn(newmf); j++)
 			{
 				printf("%f ",getDateMF(newmf, i, j));
 			}
 			printf("\n");
+			}
+			printf("\n");
 		}
-		printf("\n");
+		
 		return newmf;
 	}
 	else{
@@ -75,6 +84,7 @@ int main(int argc, char *argv[]){
 	char imagenArchivo[40]; /*Nombre del archivo imagen_1.png*/
 	int umbralBinarizacion[1];
 	int umbralClasificacion[1]; /*numero del umbral*/
+	int aux[1];
 
 	pid_t pid;
 	int status;
@@ -85,6 +95,8 @@ int main(int argc, char *argv[]){
 	int pUmbral[2]; /*para pasar el umbral para clasificacion*/
 	int pUmbralB[2];
 	int pNombre[2]; /*Para pasar nombre imagen_1.png*/
+	int resultPantalla[2];
+
 	//int pFiltroConvolucion[2]; /*para pasar filtro.txt*/
 	int pImagen[2]; /*para pasar la imagen de rectificacion*/
 	/*Se crean los pipes*/
@@ -96,7 +108,8 @@ int main(int argc, char *argv[]){
 	pipe(pDateMatrix);
 	pipe(pFilMatrix);
 	pipe(pColMatrix);
-  
+  	pipe(resultPantalla);
+
 	/*Se crea el proceso hijo.*/
 	pid = fork();
 	/*Es el padre*/
@@ -104,6 +117,7 @@ int main(int argc, char *argv[]){
 		read(3,imagenArchivo,sizeof(imagenArchivo));
 		read(5,umbralClasificacion,sizeof(umbralClasificacion));
 		read(13,umbralBinarizacion,sizeof(umbralBinarizacion));
+		read(6,aux,sizeof(aux));
 		/*falta aqui read de la imagen desde convolucion*/
 		/*read(5, entrada,sizeof(matrixF) );*/
 		read(8, &fil, sizeof(fil));
@@ -124,7 +138,7 @@ int main(int argc, char *argv[]){
 				entrada = setDateMF( entrada, y, x, date);
 			}
 		}
-		salida=filtracion(entrada,filter);
+		salida=filtracion(entrada,filter, aux[0]);
     
     
 		/*Para pasar la imagen resultante de rectification*/
@@ -151,7 +165,9 @@ int main(int argc, char *argv[]){
 		write(pUmbral[1],umbralClasificacion,sizeof(umbralClasificacion));
 		close(pUmbralB[0]);
 		write(pUmbralB[1],umbralBinarizacion,sizeof(umbralBinarizacion));
-
+		close(resultPantalla[0]);
+		write(resultPantalla[1],aux,sizeof(aux));
+		
 		waitpid(pid,&status,0);
 
 	}
@@ -166,6 +182,9 @@ int main(int argc, char *argv[]){
 		close(pUmbralB[1]);
 		dup2(pUmbralB[0],13);
 
+		close(resultPantalla[1]);
+		dup2(resultPantalla[0],6);
+
 		close(pDateMatrix[1]);
 		dup2(pDateMatrix[0], 7);
 		close(pFilMatrix[1]);
@@ -175,6 +194,7 @@ int main(int argc, char *argv[]){
 
 
 		//char *argvHijo[] = {"pooling",NULL};
+		
 		char *argvHijo[] = {"binarizacion",NULL};
 		execv(argvHijo[0],argvHijo);
 	}

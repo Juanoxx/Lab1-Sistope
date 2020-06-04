@@ -72,7 +72,8 @@ int main(int argc, char *argv[]){
     int cantidadImagenes=0;
 	int umbralBinarizacion[1];
     int umbralClasificacion[1];
-
+    int aux[1];
+    aux[0] = 0;
     /*int pUmbral[2];
 	int pUmbralB[2];
     int pNombre[2];*/
@@ -80,7 +81,7 @@ int main(int argc, char *argv[]){
     //pid_t pid;
 
     
-    int caso, aux=0;
+    int caso;//, aux=0;
 
     //c: Cantidad de imágenes
 	//u: Umbral de binarización de la imágen
@@ -92,7 +93,7 @@ int main(int argc, char *argv[]){
             case 'c':
         
                 strcpy(cflag, optarg); /*Numero Cantidad imagenes*/
-        
+        		
                 break;    
             case 'u':
                 strcpy(uflag, optarg); /*Umbral de binarizacion*/
@@ -104,9 +105,11 @@ int main(int argc, char *argv[]){
 
             case 'm':
             	strcpy(mflag,optarg);  /*Archivo del filtro laplaciano*/
-        
+        		break;
+
             case 'b': /*Se muestra o no por pantalla*/
-                aux=1;
+
+                aux[0] = 1;
                 break;
              default:
                 abort();
@@ -119,7 +122,6 @@ int main(int argc, char *argv[]){
 	char *date = (char *)malloc(2000*sizeof(char));
 	FILE *filefilter = fopen(mflag,"r");
 	int error = 0, cont = 0;
-	printf("p0\n");
 	while(error == 0){
 		fseek(filefilter, 0, SEEK_END);
 		if ((filefilter == NULL) || (ftell(filefilter) == 0)){
@@ -150,7 +152,11 @@ int main(int argc, char *argv[]){
 	/*int pDateMatrix[2];
 	int pFilMatrix[2];
 	int pColMatrix[2];*/
-  	printf("\n|     Imagen     |     Nearly Black     |\n");
+	if (aux[0])
+	{
+		printf("\n|     Imagen     |     Nearly Black     |\n");
+	}
+  	
   	while(image <= cantidadImagenes){ /*Se ejecuta while miestras sea cantidadImagenes>0*/
 		matrixF *filter = convertFilter(datefilter, cont); 
 		int status;
@@ -160,9 +166,9 @@ int main(int argc, char *argv[]){
 		int pUmbral[2];
 		int pUmbralB[2];
 		int pNombre[2];
+		int resultPantalla[2];
 	    char cantidadImg[10];
 	    sprintf(cantidadImg,"%d",image); 
-	    char *nombreFiltroConvolucion= mflag; /*Archivo para la etapa de convolucion*/
 	    char imagenArchivo[] = "imagen_"; /*Archivo de entrada imagenes*/
 	    char extension[] = ".jpg"; /*Extension de imagen*/
 	    strcat(imagenArchivo,cantidadImg); /*imagen_1*/
@@ -171,21 +177,25 @@ int main(int argc, char *argv[]){
 	    /*Se crean los pipes*/
 	    pipe(pNombre); /*Para pasar el nombreImagen.*/
 	    pipe(pUmbral); /*Para pasar el umbral para clasificacion.*/
-		 pipe(pUmbralB);
+		pipe(pUmbralB);
 	    pipe(pDateMatrix);
 		pipe(pFilMatrix);
 		pipe(pColMatrix);
+		pipe(resultPantalla);
 	    /*Se crea el proceso hijo*/
+
 	    pid_t pid = fork();
-	    printf("imagen: %d\n",image);
 	    /*Mayor que 0 es el PADRE*/
 	    if(pid>0){
+
 	    	close(pNombre[0]); /*Se cierra la lectura*/
 	      	write(pNombre[1],imagenArchivo,(strlen(imagenArchivo)+1));
 	      	close(pUmbral[0]); /*Se cierra la lectura*/
 	      	write(pUmbral[1],umbralClasificacion,sizeof(umbralClasificacion));
 			close(pUmbralB[0]); /*Se cierra la lectura*/
 	      	write(pUmbralB[1],umbralBinarizacion,sizeof(umbralBinarizacion));
+	      	close(resultPantalla[0]);
+	      	write(resultPantalla[1],aux,sizeof(aux));
 			close(pDateMatrix[0]);
 			close(pFilMatrix[0]);
 			close(pColMatrix[0]);
@@ -202,13 +212,16 @@ int main(int argc, char *argv[]){
 	      	waitpid(pid,&status,0);
 
 	    }else{/*Es hijo*/
+
 	      	close(pNombre[1]);
 	      	dup2(pNombre[0],3);
 	      	close(pUmbral[1]);
 	      	dup2(pUmbral[0],4);
 			close(pUmbralB[1]);
 	      	dup2(pUmbralB[0],5);
-			
+			close(resultPantalla[1]);
+			dup2(resultPantalla[0],6);
+
 			close(pDateMatrix[1]);
 	      	dup2(pDateMatrix[0], 7);
 			close(pFilMatrix[1]);

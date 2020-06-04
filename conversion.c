@@ -37,6 +37,7 @@ int main(int argc, char *argv[]){
   //char nombreFiltroConvolucion[40]; /*filtro.txt*/
   int umbralBinarizacion[1];
   int umbralClasificacion[1]; /*numero del umbral*/
+  int aux[1];
 
   pid_t pid;
   int status;
@@ -47,6 +48,7 @@ int main(int argc, char *argv[]){
   int pUmbral[2]; /*para pasar el umbral para clasificacion*/
   int pUmbralB[2];
   int pNombre[2]; /*Para pasar nombre imagen_1.png*/
+  int resultPantalla[2];
   //int pFiltroConvolucion[2]; /*para pasar filtro.txt*/
   int pImagen[2]; /*para pasar la imagen de convolucion*/
   int pDateFilter[2];
@@ -64,7 +66,8 @@ int main(int argc, char *argv[]){
   pipe(pDateMatrix);
   pipe(pFilMatrix);
   pipe(pColMatrix);
-  
+  pipe(resultPantalla);
+
   /*Se crea el proceso hijo.*/
   pid = fork();
   /*Es el padre*/
@@ -75,6 +78,7 @@ int main(int argc, char *argv[]){
     /*falta aqui read de la imagen desde lectura desde 4*/
     read(5,umbralClasificacion,sizeof(umbralClasificacion));
 	read(13,umbralBinarizacion,sizeof(umbralBinarizacion));
+	read(6,aux,sizeof(aux));
     /*read(6, filter,sizeof(filter));*/
 	read(8, &fil, sizeof(fil));
 	read(9, &col, sizeof(col));
@@ -104,6 +108,8 @@ int main(int argc, char *argv[]){
     write(pUmbral[1],umbralClasificacion,sizeof(umbralClasificacion));
 	close(pUmbralB[0]);
     write(pUmbralB[1],umbralBinarizacion,sizeof(umbralBinarizacion));
+    close(resultPantalla[0]);
+	write(resultPantalla[1],aux,sizeof(aux));
 	close(pDateFilter[0]);
 	close(pFilFilter[0]);
 	close(pColFilter[0]);
@@ -132,7 +138,7 @@ int main(int argc, char *argv[]){
 			write(pDateMatrix[1], &datematrix, sizeof(datematrix));
 		}
 	}
-
+	
     waitpid(pid,&status,0);
 
   }else{ /*Es el hijo*/
@@ -148,6 +154,9 @@ int main(int argc, char *argv[]){
 		
 		close(pUmbralB[1]);
 		dup2(pUmbralB[0],13);
+
+		close(resultPantalla[1]);
+		dup2(resultPantalla[0],6);
 
 		close(pDateFilter[1]);
 		dup2(pDateFilter[0], 7);

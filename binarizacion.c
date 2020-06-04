@@ -13,7 +13,7 @@
 
 
 
-matrixF *binarizacion(matrixF *mf, int umbral){
+matrixF *binarizacion(matrixF *mf, int umbral, int aux){
 	for (int y = 0; y < countFil(mf); y++){
 		for (int x = 0; x < countColumn(mf); x++){
 			if (getDateMF(mf,y,x) <= umbral){
@@ -24,14 +24,18 @@ matrixF *binarizacion(matrixF *mf, int umbral){
 			}
 		}
 	}
-	for (int i = 0; i < countFil(mf); i++){
-			for(int j = 0; j < countColumn(mf); j++)
-			{
-				printf("%f ",getDateMF(mf, i, j));
-			}
-			printf("\n");
-		}
-		printf("\n");
+  if (aux == 1)
+  {
+    for (int i = 0; i < countFil(mf); i++){
+      for(int j = 0; j < countColumn(mf); j++)
+      {
+        printf("%f ",getDateMF(mf, i, j));
+      }
+      printf("\n");
+    }
+    printf("\n");
+  }
+	
 	return mf;
 }
 
@@ -48,6 +52,7 @@ int main(int argc, char *argv[]){
   char imagenArchivo[40]; /*Nombre del archivo imagen_1.png*/
   int umbralBinarizacion[1];
   int umbralClasificacion[1]; /*numero del umbral*/
+  int aux[1];
 
   pid_t pid;
   int status;
@@ -60,6 +65,8 @@ int main(int argc, char *argv[]){
   int pNombre[2]; /*Para pasar nombre imagen_1.png*/
   //int pFiltroConvolucion[2]; /*para pasar filtro.txt*/
   int pImagen[2]; /*para pasar la imagen de rectificacion*/
+  int resultPantalla[2];
+
   /*Se crean los pipes*/
   //pipe(pFiltroConvolucion);
   pipe(pNombre);
@@ -69,6 +76,7 @@ int main(int argc, char *argv[]){
   pipe(pDateMatrix);
   pipe(pFilMatrix);
   pipe(pColMatrix);
+  pipe(resultPantalla);
   
   /*Se crea el proceso hijo.*/
   pid = fork();
@@ -76,19 +84,20 @@ int main(int argc, char *argv[]){
   if(pid>0){
     read(3,imagenArchivo,sizeof(imagenArchivo));
     read(4,umbralClasificacion,sizeof(umbralClasificacion));
-	read(13,umbralBinarizacion,sizeof(umbralBinarizacion));
+	  read(13,umbralBinarizacion,sizeof(umbralBinarizacion));
+    read(6,aux,sizeof(aux));
     /*falta aqui read de la imagen desde convolucion*/
     /*read(5, entrada,sizeof(matrixF) );*/
-	read(8, &fil, sizeof(fil));
-	read(9, &col, sizeof(col));
-	entrada = createMF(fil, col);
+	  read(8, &fil, sizeof(fil));
+	  read(9, &col, sizeof(col));
+	  entrada = createMF(fil, col);
 	for (int y = 0; y < countFil(entrada); y++){
 		for (int x = 0; x < countColumn(entrada); x++){
 			read(7, &date, sizeof(date));
 			entrada = setDateMF( entrada, y, x, date);
 		}
 	}
-    salida=binarizacion(entrada,umbralBinarizacion[0]);
+    salida=binarizacion(entrada,umbralBinarizacion[0], aux[0]);
     
     
     /*Para pasar la imagen resultante de rectification*/
@@ -113,6 +122,8 @@ int main(int argc, char *argv[]){
 
     close(pUmbral[0]);
     write(pUmbral[1],umbralClasificacion,sizeof(umbralClasificacion));
+    close(resultPantalla[0]);
+    write(resultPantalla[1],aux,sizeof(aux));
 
     waitpid(pid,&status,0);
 
@@ -125,15 +136,21 @@ int main(int argc, char *argv[]){
     close(pUmbral[1]);
     dup2(pUmbral[0],4);
 
-	close(pDateMatrix[1]);
-	dup2(pDateMatrix[0], 7);
-	close(pFilMatrix[1]);
-	dup2(pFilMatrix[0], 8);
-	close(pColMatrix[1]);
-	dup2(pColMatrix[0], 9);
+    close(resultPantalla[1]);
+    dup2(resultPantalla[0],6);
+
+	  close(pDateMatrix[1]);
+	  dup2(pDateMatrix[0], 7);
+
+	  close(pFilMatrix[1]);
+	  dup2(pFilMatrix[0], 8);
+
+	  close(pColMatrix[1]);
+	  dup2(pColMatrix[0], 9);
 
 
     char *argvHijo[] = {"clasificacion",NULL};
+
     execv(argvHijo[0],argvHijo);
   }
     return 0;
