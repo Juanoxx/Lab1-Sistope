@@ -17,7 +17,6 @@
 #include "jpeglib.h"
 #include <setjmp.h>
 
-//
 matrixF *convertFilter(char **datefilter, int cont);
 
 // Funcion main: Funcion que toma por parametros los datos entrantes y pasa a la etapa de lectura,
