@@ -1,3 +1,9 @@
+/*Laboratorio número uno de Sistemas operativos - 1 - 2020*/
+/*Integrantes: Hugo Arenas - Juan Arredondo*/
+/*Profesor: Fernando Rannou*/
+
+
+/*Se importan las librerías*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -11,38 +17,13 @@
 #include "jpeglib.h"
 #include <setjmp.h>
 
+matrixF *binarizacion(matrixF *mf, int umbral);
 
 
-matrixF *binarizacion(matrixF *mf, int umbral, int aux){
-	for (int y = 0; y < countFil(mf); y++){
-		for (int x = 0; x < countColumn(mf); x++){
-			if (getDateMF(mf,y,x) <= umbral){
-				mf = setDateMF(mf, y, x, 0.0000);
-			}
-			else{
-				mf = setDateMF(mf, y, x, 255.0000);
-			}
-		}
-	}
-  if (aux == 1)
-  {
-    for (int i = 0; i < countFil(mf); i++){
-      for(int j = 0; j < countColumn(mf); j++)
-      {
-        printf("%f ",getDateMF(mf, i, j));
-      }
-      printf("\n");
-    }
-    printf("\n");
-  }
-	
-	return mf;
-}
+int main(int argc, char *argv[])
+{
 
-int main(int argc, char *argv[]){
-	/* matrixf rectificacion;
-	aqui iria la matriz para guardar la rectificacion*/	
-
+  /*Se definen las matrices*/ 
   matrixF *entrada;
   matrixF *salida;
 
@@ -50,9 +31,9 @@ int main(int argc, char *argv[]){
   int fil, col;
   float date;
   char imagenArchivo[40]; /*Nombre del archivo imagen_1.png*/
-  int umbralBinarizacion[1];
-  int umbralClasificacion[1]; /*numero del umbral*/
-  int aux[1];
+  int umbralBinarizacion[1]; /*Número del umbral de binarización*/
+  int umbralClasificacion[1]; /*Número del umbral de clasificación*/
+  int aux[1]; /*Bandera -b*/
 
   pid_t pid;
   int status;
@@ -63,12 +44,10 @@ int main(int argc, char *argv[]){
   int pUmbral[2]; /*para pasar el umbral para clasificacion*/
   int pUmbralB[2];
   int pNombre[2]; /*Para pasar nombre imagen_1.png*/
-  //int pFiltroConvolucion[2]; /*para pasar filtro.txt*/
   int pImagen[2]; /*para pasar la imagen de rectificacion*/
   int resultPantalla[2];
 
   /*Se crean los pipes*/
-  //pipe(pFiltroConvolucion);
   pipe(pNombre);
   pipe(pUmbral);
   pipe(pUmbralB);
@@ -86,8 +65,6 @@ int main(int argc, char *argv[]){
     read(4,umbralClasificacion,sizeof(umbralClasificacion));
 	  read(13,umbralBinarizacion,sizeof(umbralBinarizacion));
     read(6,aux,sizeof(aux));
-    /*falta aqui read de la imagen desde convolucion*/
-    /*read(5, entrada,sizeof(matrixF) );*/
 	  read(8, &fil, sizeof(fil));
 	  read(9, &col, sizeof(col));
 	  entrada = createMF(fil, col);
@@ -97,12 +74,9 @@ int main(int argc, char *argv[]){
 			entrada = setDateMF( entrada, y, x, date);
 		}
 	}
-    salida=binarizacion(entrada,umbralBinarizacion[0], aux[0]);
+    salida=binarizacion(entrada,umbralBinarizacion[0]);
     
     
-    /*Para pasar la imagen resultante de rectification*/
-   /* close(pImagen[0]);
-    write(pImagen[1],salida,sizeof(matrixF));*/
 	close(pDateMatrix[0]);
 	close(pFilMatrix[0]);
 	close(pColMatrix[0]);
@@ -154,8 +128,22 @@ int main(int argc, char *argv[]){
     execv(argvHijo[0],argvHijo);
   }
     return 0;
+}
 
-
-	
-
+/*Función que se encarga de convertir pixeles en valores binarios (0 o 255)*/
+/*Entrada: matriz y umbral.*/
+/*Salida: Matriz binaria*/
+matrixF *binarizacion(matrixF *mf, int umbral){
+  for (int y = 0; y < countFil(mf); y++){
+    for (int x = 0; x < countColumn(mf); x++){
+      if (getDateMF(mf,y,x) <= umbral){
+        mf = setDateMF(mf, y, x, 0.0000);
+      }
+      else{
+        mf = setDateMF(mf, y, x, 255.0000);
+      }
+    }
+  }
+  
+  return mf;
 }

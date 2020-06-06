@@ -1,3 +1,9 @@
+/*Laboratorio número uno de Sistemas operativos - 1 - 2020*/
+/*Integrantes: Hugo Arenas - Juan Arredondo*/
+/*Profesor: Fernando Rannou*/
+
+
+/*Se importan las librerías*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -11,8 +17,56 @@
 #include "jpeglib.h"
 #include <setjmp.h>
 
+GLOBAL(void) escribirJPG(char *nombre, matrixF *mf, int fil, int col);
+void clasificacion(matrixF *mf, int umbral, char *namefile, int aux);
+
+
+
+int main(int argc, char *argv[])
+{
+  
+  /*Se definen las matrices*/	
+  matrixF *entrada;
+  
+  int fil, col;
+  float date;
+
+  char imagenArchivo[40]; /*Nombre del archivo imagen_1.png*/
+  int umbralClasificacion[1]; /*Número del umbral de clasificación*/
+  int aux[1]; /*Bandera -b*/
+
+  int pUmbral[2]; /*para pasar el umbral para clasificacion*/
+  int pNombre[2]; /*Para pasar nombre imagen_1.png*/
+  int pImagen[2]; /*para pasar la imagen de pooling*/
+  int resultPantalla[2];
+
+  /*Se crean los pipes*/
+  pipe(pUmbral);
+  pipe(pNombre);
+  pipe(pImagen);
+  pipe(resultPantalla);
+
+  read(3,imagenArchivo,sizeof(imagenArchivo));
+  read(4,umbralClasificacion,sizeof(umbralClasificacion));
+  read(6,aux,sizeof(aux));
+  read(8, &fil, sizeof(fil));
+  read(9, &col, sizeof(col));
+
+  entrada = createMF(fil, col);
+  for (int y = 0; y < countFil(entrada); y++){
+	for (int x = 0; x < countColumn(entrada); x++){
+		read(7, &date, sizeof(date));
+		entrada = setDateMF( entrada, y, x, date);
+	}
+  }
+
+  char *imagefile = (char *)malloc(1000*sizeof(char));
+  strncpy(imagefile, imagenArchivo, strlen(imagenArchivo) - 4);
+  clasificacion(entrada, umbralClasificacion[0],imagefile, aux[0]);
+  return 0;
+}
+
 // Funcion: EScribe un archivo en formato png, resultante
-// 
 // Entrada: en nombre del archivo y lamatriz resultante.
 // Salida: void
 GLOBAL(void)
@@ -59,7 +113,6 @@ escribirJPG(char *nombre, matrixF *mf, int fil, int col){
 }
 
 // Funcion: Permite clasificar una imagene de acuerdo a un umbral
-// 
 // Entrada: Matriz resultante desde etapa de pooling, umbral ingresado por usuario y el nombre d ela imagen.
 // Salida: void
 
@@ -87,51 +140,4 @@ void clasificacion(matrixF *mf, int umbral, char *namefile, int aux){
 	}
 	strcat(namefile,"R.jpg");
 	escribirJPG(namefile, mf,countFil(mf),countColumn(mf));
-}
-
-
-int main(int argc, char *argv[]){
-  /* matrixf clasfication;
-  aqui iria la matriz para guardar el clasification*/ 
-  matrixF *entrada;
-  
-  int fil, col;
-  float date;
-
-  char imagenArchivo[40]; /*Nombre del archivo imagen_1.png*/
-  int umbralClasificacion[1]; /*numero del umbral*/
-  int aux[1];
-
-  int pUmbral[2]; /*para pasar el umbral para clasificacion*/
-  int pNombre[2]; /*Para pasar nombre imagen_1.png*/
-  //int pFiltroConvolucion[2]; /*para pasar filtro.txt*/
-  int pImagen[2]; /*para pasar la imagen de pooling*/
-  int resultPantalla[2];
-  /*Se crean los pipes*/
-  //pipe(pFiltroConvolucion);
-  pipe(pUmbral);
-  pipe(pNombre);
-  pipe(pImagen);
-  pipe(resultPantalla);
-
-  read(3,imagenArchivo,sizeof(imagenArchivo));
-  read(4,umbralClasificacion,sizeof(umbralClasificacion));
-
-  read(6,aux,sizeof(aux));
-  /*falta aqui read de la imagen desde pooling*/
-  /*read(5, entrada,sizeof(matrixF) );*/
-  read(8, &fil, sizeof(fil));
-  read(9, &col, sizeof(col));
-  entrada = createMF(fil, col);
-  for (int y = 0; y < countFil(entrada); y++){
-	for (int x = 0; x < countColumn(entrada); x++){
-		read(7, &date, sizeof(date));
-		entrada = setDateMF( entrada, y, x, date);
-	}
-  }
-
-  char *imagefile = (char *)malloc(1000*sizeof(char));
-  strncpy(imagefile, imagenArchivo, strlen(imagenArchivo) - 4);
-  clasificacion(entrada, umbralClasificacion[0],imagefile, aux[0]);
-  return 0;
 }

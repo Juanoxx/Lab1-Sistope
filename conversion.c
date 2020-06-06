@@ -1,3 +1,9 @@
+/*Laboratorio número uno de Sistemas operativos - 1 - 2020*/
+/*Integrantes: Hugo Arenas - Juan Arredondo*/
+/*Profesor: Fernando Rannou*/
+
+
+/*Se importan las librerías*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -11,21 +17,12 @@
 #include "jpeglib.h"
 #include <setjmp.h>
 
+matrixF *escalaGris(matrixF *mf);
 
-matrixF *escalaGris(matrixF *mf) {
-	matrixF *newmf = createMF(countFil(mf), countColumn(mf)/3);
-	for(int y = 0; y < countFil(newmf); y++) {
-		for(int x = 0; x < countColumn(newmf); x++) {
-			float prom = getDateMF(mf,y,x*3)*0.299+getDateMF(mf,y,x*3 + 1)*0.587+getDateMF(mf,y,x*3 + 2)*0.114;
-			newmf = setDateMF(newmf, y, x, prom);
-		}
-	}
-	return newmf;
-}
 
 int main(int argc, char *argv[]){
-  /*matrixf convolucion;
-  aqui iria la matriz para guardar la convolucion*/	
+
+  /*Se definen las matrices*/	
   matrixF *filter;
   matrixF *entrada;
   matrixF *salida;
@@ -34,10 +31,9 @@ int main(int argc, char *argv[]){
   int fil, col, fil2, col2;
   float date, date2;
   char imagenArchivo[40]; /*Nombre del archivo imagen_1.png*/
-  //char nombreFiltroConvolucion[40]; /*filtro.txt*/
-  int umbralBinarizacion[1];
-  int umbralClasificacion[1]; /*numero del umbral*/
-  int aux[1];
+  int umbralBinarizacion[1]; /*Número del umbral de binarización*/
+  int umbralClasificacion[1]; /*Número del umbral de clasificación*/
+  int aux[1]; /*Bandera -b*/
 
   pid_t pid;
   int status;
@@ -48,14 +44,13 @@ int main(int argc, char *argv[]){
   int pUmbral[2]; /*para pasar el umbral para clasificacion*/
   int pUmbralB[2];
   int pNombre[2]; /*Para pasar nombre imagen_1.png*/
-  int resultPantalla[2];
-  //int pFiltroConvolucion[2]; /*para pasar filtro.txt*/
+  int resultPantalla[2]; /*Para pasar la escritura por pantalla*/
   int pImagen[2]; /*para pasar la imagen de convolucion*/
   int pDateFilter[2];
   int pFilFilter[2];
   int pColFilter[2];
+
   /*Se crean los pipes*/
-  //pipe(pFiltroConvolucion); No se tiene que pasar, porque aqui se ocupa
   pipe(pNombre);
   pipe(pUmbral);
   pipe(pUmbralB);
@@ -74,12 +69,9 @@ int main(int argc, char *argv[]){
   if(pid>0){
 
     read(3,imagenArchivo,sizeof(imagenArchivo));
-   /*read(4, entrada, sizeof(entrada));*/
-    /*falta aqui read de la imagen desde lectura desde 4*/
     read(5,umbralClasificacion,sizeof(umbralClasificacion));
 	read(13,umbralBinarizacion,sizeof(umbralBinarizacion));
 	read(6,aux,sizeof(aux));
-    /*read(6, filter,sizeof(filter));*/
 	read(8, &fil, sizeof(fil));
 	read(9, &col, sizeof(col));
 	filter = createMF(fil, col);
@@ -98,7 +90,7 @@ int main(int argc, char *argv[]){
 			entrada = setDateMF( entrada, y2, x2, date2);
 		}
 	}
-    //salida=bidirectionalConvolution(entrada,filter);
+
 	salida=escalaGris(entrada);
     /*Para pasar la imagen resultante de convolucion*/
 
@@ -123,8 +115,7 @@ int main(int argc, char *argv[]){
 			write(pDateFilter[1], &datefilter, sizeof(datefilter));
 		}
 	}	
-	/*close(pImagen[0]);
-    write(pImagen[1],salida,sizeof(matrixF));*/
+
 	close(pDateMatrix[0]);
 	close(pFilMatrix[0]);
 	close(pColMatrix[0]);
@@ -160,25 +151,39 @@ int main(int argc, char *argv[]){
 
 		close(pDateFilter[1]);
 		dup2(pDateFilter[0], 7);
+
 		close(pFilFilter[1]);
 		dup2(pFilFilter[0], 8);
+		
 		close(pColFilter[1]);
 		dup2(pColFilter[0], 9);
 		
 		close(pDateMatrix[1]);
 		dup2(pDateMatrix[0], 10);
+		
 		close(pFilMatrix[1]);
 		dup2(pFilMatrix[0], 11);
+		
 		close(pColMatrix[1]);
 		dup2(pColMatrix[0], 12);
 
+		char *argvHijo[] = {"filtracion",NULL};
+    	execv(argvHijo[0],argvHijo);
+  	}
 
-
-    //char *argvHijo[] = {"rectification",NULL};
-	char *argvHijo[] = {"filtracion",NULL};
-    execv(argvHijo[0],argvHijo);
-  }
-    return 0;
-
+  return 0;
 }
 
+/*Función que se encarga de convertir pixeles en escala de grises*/
+/*Entrada: pixeles, alto y largo.*/
+/* Salida: Matriz con escala de grises*/
+matrixF *escalaGris(matrixF *mf) {
+	matrixF *newmf = createMF(countFil(mf), countColumn(mf)/3);
+	for(int y = 0; y < countFil(newmf); y++) {
+		for(int x = 0; x < countColumn(newmf); x++) {
+			float prom = getDateMF(mf,y,x*3)*0.299+getDateMF(mf,y,x*3 + 1)*0.587+getDateMF(mf,y,x*3 + 2)*0.114;
+			newmf = setDateMF(newmf, y, x, prom);
+		}
+	}
+	return newmf;
+}

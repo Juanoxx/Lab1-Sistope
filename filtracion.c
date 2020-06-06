@@ -1,3 +1,9 @@
+/*Laboratorio número uno de Sistemas operativos - 1 - 2020*/
+/*Integrantes: Hugo Arenas - Juan Arredondo*/
+/*Profesor: Fernando Rannou*/
+
+
+/*Se importan las librerías*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -11,69 +17,13 @@
 #include "jpeglib.h"
 #include <setjmp.h>
 
+matrixF *filtracion(matrixF *mf, matrixF *filter);
 
-matrixF *filtracion(matrixF *mf, matrixF *filter, int aux){
-	if ((countFil(filter) == countColumn(filter))&&(countFil(filter)%2 == 1)){
-		int increase = 0, initial = countFil(filter);
-		while (initial != 1){
-			initial = initial - 2;
-			increase = increase + 1;
-		}
 
-		if (aux == 1)
-		{
-			for (int i = 0; i < countFil(mf); i++){
-			for(int j = 0; j < countColumn(mf); j++)
-			{
-				printf("%f ",getDateMF(mf, i, j));
-			}
-			printf("\n");
-			}
-			printf("\n");
-		}
-		
-		matrixF *newmf = createMF(countFil(mf),countColumn(mf));
-		for (int cont = 0; cont < increase; cont++){
-			mf = amplifyMF(mf);
-		}
-		for (int fil = increase; fil < countFil(mf) - increase; fil++){
-			for (int col = increase; col < countColumn(mf) - increase; col++){
-				float sum = 0.0000;
-				for (int y = 0; y < countFil(filter); y++){
-					for (int x = 0; x < countColumn(filter); x++){
-						float result = getDateMF(filter, y, x)*getDateMF(mf, y + fil - increase, x + col - increase);
-						sum = sum + result;
-					}
-				}
-				newmf = setDateMF(newmf, fil - increase, col - increase, sum);
-				
-			}
-		}
-		for (int cont2 = 0; cont2 < increase; cont2++){
-			mf = decreaseMF(mf);
-		}
-		if (aux == 1)
-		{
-			for (int i = 0; i < countFil(newmf); i++){
-			for(int j = 0; j < countColumn(newmf); j++)
-			{
-				printf("%f ",getDateMF(newmf, i, j));
-			}
-			printf("\n");
-			}
-			printf("\n");
-		}
-		
-		return newmf;
-	}
-	else{
-		return mf;
-	}
-}
+int main(int argc, char *argv[])
+{
 
-int main(int argc, char *argv[]){
-	/* matrixf rectificacion;
-	aqui iria la matriz para guardar la rectificacion*/	
+	/*Se definen las matrices*/	
 	matrixF *filter;
 	matrixF *entrada;
 	matrixF *salida;
@@ -82,9 +32,9 @@ int main(int argc, char *argv[]){
 	int fil, col, fil2, col2;
 	float date;
 	char imagenArchivo[40]; /*Nombre del archivo imagen_1.png*/
-	int umbralBinarizacion[1];
-	int umbralClasificacion[1]; /*numero del umbral*/
-	int aux[1];
+  	int umbralBinarizacion[1]; /*Número del umbral de binarización*/
+  	int umbralClasificacion[1]; /*Número del umbral de clasificación*/
+  	int aux[1]; /*Bandera -b*/
 
 	pid_t pid;
 	int status;
@@ -96,11 +46,9 @@ int main(int argc, char *argv[]){
 	int pUmbralB[2];
 	int pNombre[2]; /*Para pasar nombre imagen_1.png*/
 	int resultPantalla[2];
-
-	//int pFiltroConvolucion[2]; /*para pasar filtro.txt*/
 	int pImagen[2]; /*para pasar la imagen de rectificacion*/
+
 	/*Se crean los pipes*/
-	//pipe(pFiltroConvolucion);
 	pipe(pNombre);
 	pipe(pUmbral);
 	pipe(pUmbralB);
@@ -118,8 +66,6 @@ int main(int argc, char *argv[]){
 		read(5,umbralClasificacion,sizeof(umbralClasificacion));
 		read(13,umbralBinarizacion,sizeof(umbralBinarizacion));
 		read(6,aux,sizeof(aux));
-		/*falta aqui read de la imagen desde convolucion*/
-		/*read(5, entrada,sizeof(matrixF) );*/
 		read(8, &fil, sizeof(fil));
 		read(9, &col, sizeof(col));
 		filter = createMF(fil, col);
@@ -138,12 +84,8 @@ int main(int argc, char *argv[]){
 				entrada = setDateMF( entrada, y, x, date);
 			}
 		}
-		salida=filtracion(entrada,filter, aux[0]);
+		salida=filtracion(entrada,filter);
     
-    
-		/*Para pasar la imagen resultante de rectification*/
-		/* close(pImagen[0]);
-		write(pImagen[1],salida,sizeof(matrixF));*/
 		close(pDateMatrix[0]);
 		close(pFilMatrix[0]);
 		close(pColMatrix[0]);
@@ -179,6 +121,7 @@ int main(int argc, char *argv[]){
 
 		close(pUmbral[1]);
 		dup2(pUmbral[0],4);
+		
 		close(pUmbralB[1]);
 		dup2(pUmbralB[0],13);
 
@@ -187,16 +130,54 @@ int main(int argc, char *argv[]){
 
 		close(pDateMatrix[1]);
 		dup2(pDateMatrix[0], 7);
+
 		close(pFilMatrix[1]);
 		dup2(pFilMatrix[0], 8);
+		
 		close(pColMatrix[1]);
 		dup2(pColMatrix[0], 9);
 
-
-		//char *argvHijo[] = {"pooling",NULL};
-		
 		char *argvHijo[] = {"binarizacion",NULL};
 		execv(argvHijo[0],argvHijo);
 	}
     return 0;
+}
+
+/*Función que se encarga de realizar la convolución a la imágen e imprimirla si se introdujo -b*/
+/*Entrada: imagen y filtro.*/
+/*Salida: Matriz convolucionada*/
+matrixF *filtracion(matrixF *mf, matrixF *filter){
+	if ((countFil(filter) == countColumn(filter))&&(countFil(filter)%2 == 1)){
+		int increase = 0, initial = countFil(filter);
+		while (initial != 1){
+			initial = initial - 2;
+			increase = increase + 1;
+		}
+		
+		matrixF *newmf = createMF(countFil(mf),countColumn(mf));
+		for (int cont = 0; cont < increase; cont++){
+			mf = amplifyMF(mf);
+		}
+		for (int fil = increase; fil < countFil(mf) - increase; fil++){
+			for (int col = increase; col < countColumn(mf) - increase; col++){
+				float sum = 0.0000;
+				for (int y = 0; y < countFil(filter); y++){
+					for (int x = 0; x < countColumn(filter); x++){
+						float result = getDateMF(filter, y, x)*getDateMF(mf, y + fil - increase, x + col - increase);
+						sum = sum + result;
+					}
+				}
+				newmf = setDateMF(newmf, fil - increase, col - increase, sum);
+				
+			}
+		}
+		for (int cont2 = 0; cont2 < increase; cont2++){
+			mf = decreaseMF(mf);
+		}
+		
+		return newmf;
+	}
+	else{
+		return mf;
+	}
 }

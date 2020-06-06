@@ -1,3 +1,9 @@
+/*Laboratorio número uno de Sistemas operativos - 1 - 2020*/
+/*Integrantes: Hugo Arenas - Juan Arredondo*/
+/*Profesor: Fernando Rannou*/
+
+
+/*Se importan las librerías*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -11,80 +17,19 @@
 #include "jpeglib.h"
 #include <setjmp.h>
 
+matrixF *grayScale(int **pixels, int height, int width);
 
+METHODDEF(void) my_error_exit (j_common_ptr cinfo);
 
-matrixF *grayScale(int **pixels, int height, int width) {
-	matrixF *mf = createMF(height, width);
-	for(int y = 0; y < height; y++) {
-		for(int x = 0; x < width; x++) {
-			float prom = pixels[y][x*3]*0.299+pixels[y][x*3 + 1]*0.587+pixels[y][x*3 + 2]*0.114;
-			mf = setDateMF(mf, y, x, prom);
-		}
-	}
-	return mf;
-}
+GLOBAL(matrixF*) leerJPG(char *nombre);
 
+/*Estructura para manejar imágenes tipo .jpg*/
 struct my_error_mgr {
   struct jpeg_error_mgr pub;	
   jmp_buf setjmp_buffer;
 };
 
 typedef struct my_error_mgr * my_error_ptr;
-METHODDEF(void)
-my_error_exit (j_common_ptr cinfo){
-	my_error_ptr myerr = (my_error_ptr) cinfo->err;
-	(*cinfo->err->output_message) (cinfo);
-	longjmp(myerr->setjmp_buffer, 1);
-}
-GLOBAL(matrixF*)
-leerJPG(char *nombre){
-	struct jpeg_decompress_struct cinfo;
-	struct my_error_mgr jerr;
-	FILE * imagen;
-	JSAMPARRAY buffer;
-	int row_stride;
-	if ((imagen = fopen(nombre, "rb")) == NULL) {
-		fprintf(stderr, "can't open %s\n", nombre);
-		return 0;
-	}
-	cinfo.err = jpeg_std_error(&jerr.pub);
-	jerr.pub.error_exit = my_error_exit;
-	if (setjmp(jerr.setjmp_buffer)) {
-		jpeg_destroy_decompress(&cinfo);
-		fclose(imagen);
-		return 0;
-	}
-	jpeg_create_decompress(&cinfo);
-	jpeg_stdio_src(&cinfo, imagen);
-	(void) jpeg_read_header(&cinfo, TRUE);
-	(void) jpeg_start_decompress(&cinfo);
-	row_stride = cinfo.output_width * cinfo.output_components;
-	unsigned char* filaPixel = (unsigned char*)malloc( cinfo.output_width*cinfo.output_height*cinfo.num_components );
-	buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
-	int acum = 0;
-	while (cinfo.output_scanline < cinfo.output_height) {
-		(void) jpeg_read_scanlines(&cinfo, buffer, 1);
-		for(int i = 0;i < cinfo.image_width*cinfo.num_components;i++){
-			filaPixel[i + acum] = buffer[0][i];
-			if (i == cinfo.image_width*cinfo.num_components - 1){
-				acum = acum + i + 1;
-			}
-		}
-	}
-	matrixF *mf = createMF(cinfo.image_height, cinfo.image_width*3);
-	for (int i = 0; i < cinfo.image_height; i++){
-		for(int j = 0; j < cinfo.image_width; j++)
-		{
-			mf = setDateMF(mf,i,j*3,(float)filaPixel[(i*cinfo.image_width*3)+(j*3)+0]);
-			mf = setDateMF(mf,i,j*3 + 1,(float)filaPixel[(i*cinfo.image_width*3)+(j*3)+1]);
-			mf = setDateMF(mf,i,j*3 + 2,(float)filaPixel[(i*cinfo.image_width*3)+(j*3)+2]);
-		}
-	}
-	(void) jpeg_finish_decompress(&cinfo);
-	jpeg_destroy_decompress(&cinfo);
-	fclose(imagen);
-	return mf;
-}
 
 int main(int argc, char *argv[]){
 	matrixF *filter;
@@ -169,8 +114,7 @@ int main(int argc, char *argv[]){
 				write(pDateFilter[1], &datefilter, sizeof(datefilter));
 			}
 		}		
-		/*close(pImagen[0]);
-		write(pImagen[1],salida,sizeof(matrixF));*/		
+
 		close(pDateMatrix[0]);
 		close(pFilMatrix[0]);
 		close(pColMatrix[0]);
@@ -204,18 +148,22 @@ int main(int argc, char *argv[]){
 
 		close(pDateFilter[1]);
 		dup2(pDateFilter[0], 7);
+
 		close(pFilFilter[1]);
 		dup2(pFilFilter[0], 8);
+
 		close(pColFilter[1]);
 		dup2(pColFilter[0], 9);
 		
 		close(pDateMatrix[1]);
 		dup2(pDateMatrix[0], 10);
+
 		close(pFilMatrix[1]);
 		dup2(pFilMatrix[0], 11);
+
 		close(pColMatrix[1]);
 		dup2(pColMatrix[0], 12);
-		//char *argvHijo[] = {"bidireccionalConvolution",NULL};
+
 		char *argvHijo[] = {"conversion",NULL};
 		execv(argvHijo[0],argvHijo);
 	}
@@ -223,3 +171,78 @@ int main(int argc, char *argv[]){
 
 }
 
+/*Función que se encarga de convertir pixeles en escala de grises*/
+/*Entrada: pixeles, alto y largo.*/
+/* Salida: Matriz con escala de grises*/
+matrixF *grayScale(int **pixels, int height, int width) {
+	matrixF *mf = createMF(height, width);
+	for(int y = 0; y < height; y++) {
+		for(int x = 0; x < width; x++) {
+			float prom = pixels[y][x*3]*0.299+pixels[y][x*3 + 1]*0.587+pixels[y][x*3 + 2]*0.114;
+			mf = setDateMF(mf, y, x, prom);
+		}
+	}
+	return mf;
+}
+
+
+
+METHODDEF(void)
+my_error_exit (j_common_ptr cinfo){
+	my_error_ptr myerr = (my_error_ptr) cinfo->err;
+	(*cinfo->err->output_message) (cinfo);
+	longjmp(myerr->setjmp_buffer, 1);
+}
+
+/*Función que se encarga de leer imágen en formato .jpg*/
+/*Entrada: Imágen jpg.*/
+/* Salida: Imagen leída, caso contrario retorna cero*/
+GLOBAL(matrixF*)
+leerJPG(char *nombre){
+	struct jpeg_decompress_struct cinfo;
+	struct my_error_mgr jerr;
+	FILE * imagen;
+	JSAMPARRAY buffer;
+	int row_stride;
+	if ((imagen = fopen(nombre, "rb")) == NULL) {
+		fprintf(stderr, "can't open %s\n", nombre);
+		return 0;
+	}
+	cinfo.err = jpeg_std_error(&jerr.pub);
+	jerr.pub.error_exit = my_error_exit;
+	if (setjmp(jerr.setjmp_buffer)) {
+		jpeg_destroy_decompress(&cinfo);
+		fclose(imagen);
+		return 0;
+	}
+	jpeg_create_decompress(&cinfo);
+	jpeg_stdio_src(&cinfo, imagen);
+	(void) jpeg_read_header(&cinfo, TRUE);
+	(void) jpeg_start_decompress(&cinfo);
+	row_stride = cinfo.output_width * cinfo.output_components;
+	unsigned char* filaPixel = (unsigned char*)malloc( cinfo.output_width*cinfo.output_height*cinfo.num_components );
+	buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
+	int acum = 0;
+	while (cinfo.output_scanline < cinfo.output_height) {
+		(void) jpeg_read_scanlines(&cinfo, buffer, 1);
+		for(int i = 0;i < cinfo.image_width*cinfo.num_components;i++){
+			filaPixel[i + acum] = buffer[0][i];
+			if (i == cinfo.image_width*cinfo.num_components - 1){
+				acum = acum + i + 1;
+			}
+		}
+	}
+	matrixF *mf = createMF(cinfo.image_height, cinfo.image_width*3);
+	for (int i = 0; i < cinfo.image_height; i++){
+		for(int j = 0; j < cinfo.image_width; j++)
+		{
+			mf = setDateMF(mf,i,j*3,(float)filaPixel[(i*cinfo.image_width*3)+(j*3)+0]);
+			mf = setDateMF(mf,i,j*3 + 1,(float)filaPixel[(i*cinfo.image_width*3)+(j*3)+1]);
+			mf = setDateMF(mf,i,j*3 + 2,(float)filaPixel[(i*cinfo.image_width*3)+(j*3)+2]);
+		}
+	}
+	(void) jpeg_finish_decompress(&cinfo);
+	jpeg_destroy_decompress(&cinfo);
+	fclose(imagen);
+	return mf;
+}
